@@ -1,41 +1,42 @@
 using Newtonsoft.Json;
 using XSLARowDataFormatter.Entity;
 
-namespace XSLARowDataFormatter.Implementations;
-
-public interface IKnownVersions
+namespace XSLARowDataFormatter.Implementations
 {
-    double NumberOfDaysSinceRelease(DateTime created, string? version);
-}
 
-public class KnownVersions: IKnownVersions
-{
-    private readonly string m_versionFile;
-    private Lazy<Root> m_knownVersions;
-    
-    public KnownVersions(string versionFile)
+    public interface IKnownVersions
     {
-        m_versionFile = versionFile;
-        m_knownVersions = new Lazy<Root>(Load);
+        double NumberOfDaysSinceRelease(DateTime created, string? version);
     }
 
-    public double NumberOfDaysSinceRelease(DateTime created, string? version)
+    public class KnownVersions : IKnownVersions
     {
-        var found = m_knownVersions.Value.versions.allowedValues.FirstOrDefault(v => v.name.Equals(version));
-        if (found != null)
+        private readonly string m_versionFile;
+        private Lazy<Root> m_knownVersions;
+
+        public KnownVersions(string versionFile)
         {
-            DateTime.TryParse(found.releaseDate, out var releaseDay);
-            return (created - releaseDay).TotalDays;
+            m_versionFile = versionFile;
+            m_knownVersions = new Lazy<Root>(Load);
         }
-        return 0;
+
+        public double NumberOfDaysSinceRelease(DateTime created, string? version)
+        {
+            var found = m_knownVersions.Value.versions.allowedValues.FirstOrDefault(v => v.name.Equals(version));
+            if (found != null)
+            {
+                DateTime.TryParse((ReadOnlySpan<char>)found.releaseDate, out var releaseDay);
+                return (created - releaseDay).TotalDays;
+            }
+
+            return 0;
+        }
+
+        private Root Load()
+        {
+            var text = File.ReadAllText(m_versionFile);
+            return JsonConvert.DeserializeObject<Root>(text);
+        }
+
     }
-    
-    private Root Load()
-    {
-        var text = File.ReadAllText(m_versionFile);
-        return JsonConvert.DeserializeObject<Root>(text);
-    }
-    
-    
-    
 }

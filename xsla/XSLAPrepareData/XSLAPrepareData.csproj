@@ -8,8 +8,25 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\XSLAClient\XSLAClient.csproj" />
       <ProjectReference Include="..\XSLARawDataFormatter\XSLARawDataFormatter.csproj" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="nlog.config">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="python script\csvmodifider.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="python_script\csvmodifider.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="python_script\" />
     </ItemGroup>
 
 </Project>

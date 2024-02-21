@@ -17,10 +17,11 @@ namespace XSLARowDataFormatter.Implementations
     {
         private readonly Logger m_logger = LogManager.GetCurrentClassLogger();
         private readonly IKnownVersions m_knownVersions;
-
+        private readonly Lazy<Dictionary<string, int>> m_wordValueDictionary;
         public XSLAFormatter(IKnownVersions knownVersions)
         {
             m_knownVersions = knownVersions;
+            m_wordValueDictionary = new Lazy<Dictionary<string, int>>(() => ReadSentimentDictionary("dict.txt"));
         }
 
         public Record Format(Issue rawData)
@@ -38,7 +39,7 @@ namespace XSLARowDataFormatter.Implementations
                     ? rawData.fields.customfield_10272.name
                     : rawData.fields.customfield_10101 != null
                         ? rawData.fields.customfield_10101.name
-                        : "none";
+                        : null;
                 List<Component>? sortedComponents = rawData.fields.components;
 
                 sortedComponents?.Sort();
@@ -52,6 +53,7 @@ namespace XSLARowDataFormatter.Implementations
 
                 return new Record
                 {
+                    Issue = rawData.key,
                     ToPlatform = rawData.fields.customfield_10347 != null
                         ? rawData.fields.customfield_10347.First().value
                         : null,
@@ -68,15 +70,19 @@ namespace XSLARowDataFormatter.Implementations
                     DaysSinceRelease = !string.IsNullOrEmpty(knownVersion)
                         ? m_knownVersions.NumberOfDaysSinceRelease(rawData.fields.created, knownVersion)
                         : 0,
-                    PingPong = rawData.fields.customfield_10436 != null
-                        ? double.Parse(rawData.fields.customfield_10436.ToString())
-                        : -1,
+                    // PingPong = rawData.fields.customfield_10436 != null
+                    //     ? double.Parse(rawData.fields.customfield_10436.ToString())
+                    //     : -1,
                     Severity = rawData.fields.customfield_10082?.value,
                     Priority = rawData.fields.priority.name,
                     Initiative = rawData.fields.customfield_10276?.value,
                     ZVMZCAOsType = GetOsType(rawData.fields.customfield_10388),
                     Component = knownComponents,
-                    NumberOfWorkingDays = (rawData.fields.updated - rawData.fields.created).TotalDays
+                    NumberOfWorkingDays = (rawData.fields.updated - rawData.fields.created).TotalDays,
+                    Sentimental = CalculateSentimental(rawData.fields.description),
+                    Summary = rawData.fields.summary,
+                    UserImpact = rawData.fields.customfield_10069,
+                    WhatIsNeeded = rawData.fields.customfield_10375
                 };
             }
             catch (Exception e)
@@ -85,8 +91,74 @@ namespace XSLARowDataFormatter.Implementations
                 throw;
             }
         }
+        
+        private int? CalculateSentimental(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return null;
+            
+            int totalValue = 0;
 
-        private OsTypes GetOsType(List<Customfield10388>? osTypes)
+            string[] words = text.Split(new char[] { ' ', '.', ',', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+        
+            foreach (string word in words)
+            {
+                string lowerCaseWord = word.ToLower();
+            
+                if (m_wordValueDictionary.Value.TryGetValue(lowerCaseWord, out var value))
+                {                
+                    totalValue += value;
+                }
+            }
+
+            return totalValue;
+        }
+
+        private Dictionary<string, int> ReadSentimentDictionary(string filePath)
+        {
+            Dictionary<string, int> wordValueDictionary = new Dictionary<string, int>();
+
+            try
+            {
+                string[] lines = File.ReadAllLines(filePath);
+
+                foreach (string line in lines)
+                {
+                    string[] parts = line.Split(',');
+
+                    if (parts.Length == 2)
+                    {
+                        string word = parts[0].Trim();
+                        int value;
+
+                        if (int.TryParse(parts[1].Trim(), out value))
+                        {
+                            wordValueDictionary.Add(word, value);
+                        }
+                        else
+                        {
+                            m_logger.Error($"Error parsing value for word: {word}");
+                        }
+                    }
+                    else
+                    {
+                        m_logger.Error($"Invalid format in line: {line}");
+                    }
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                m_logger.Error(e, $"File not found at path: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                m_logger.Error(ex, $"An error occurred");
+            }
+
+            return wordValueDictionary;
+        }
+
+        private OsTypes? GetOsType(List<Customfield10388>? osTypes)
         {
             var ostypes = new List<string> { "windows", "linux" };
 
@@ -111,10 +183,10 @@ namespace XSLARowDataFormatter.Implementations
                 return OsTypes.Both;
             }
 
-            return OsTypes.NotDefined;
+            return null;
         }
 
-        private string GetValue(Fields rawDataFields, string whatNeeded)
+        private string? GetValue(Fields rawDataFields, string whatNeeded)
         {
             switch (whatNeeded)
             {
@@ -126,11 +198,11 @@ namespace XSLARowDataFormatter.Implementations
                         return m.Value;
                     }
 
-                    return string.Empty;
+                    break;
                 }
             }
 
-            return string.Empty;
+            return null;
         }
     }
 }

@@ -1,8 +1,9 @@
 using XSLARowDataFormatter.Entity;
 
-namespace XSLARawDataFormatter;
-
-public interface IFileBuilder
+namespace XSLARowDataFormatter.Interfaces
 {
-    void Build(Dictionary<string,Issue> jiraData);
+    public interface IFileBuilder
+    {
+        void Build(Dictionary<string, Issue> jiraData);
+    }
 }

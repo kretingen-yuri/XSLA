@@ -538,3 +538,11 @@ namespace XSLARowDataFormatter.Entity;
         public bool isWatching { get; set; }
     }
 
+    public class IssuesList
+    {
+        public string expand { get; set; }
+        public int startAt { get; set; }
+        public int maxResults { get; set; }
+        public int total { get; set; }
+        public List<Issue> issues { get; set; }
+    }
