@@ -11,6 +11,8 @@
       <ProjectReference Include="..\XSLAClient\XSLAClient.csproj" />
       <ProjectReference Include="..\XSLARawDataFormatter\XSLARawDataFormatter.csproj" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="Microsoft.ML" Version="2.0.0" />
+        <PackageReference Include="Microsoft.ML.FastTree" Version="2.0.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,6 +23,12 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="python_script\csvmodifider.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Model\xSLA.mlnet">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Model\MLModel1.mlnet">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
